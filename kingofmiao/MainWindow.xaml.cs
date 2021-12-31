@@ -12,7 +12,6 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.EventArguments;
-using kingofmiao;
 using Titanium.Web.Proxy.Http;
 using Titanium.Web.Proxy.Models;
 
@@ -21,7 +20,7 @@ namespace kingofmiao
     /// <summary>
     ///     Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
         public static readonly DependencyProperty ClientConnectionCountProperty = DependencyProperty.Register(
             nameof(ClientConnectionCount), typeof(int), typeof(MainWindow), new PropertyMetadata(default(int)));
@@ -72,7 +71,7 @@ namespace kingofmiao
             ////note : load now (if existed)
             //proxyServer.CertificateManager.LoadRootCertificate(@"C:\NameFolder\rootCert.pfx", "PfxPassword");
 
-            var explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Any, 8000, true);
+            var explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Any, 8000);
 
             proxyServer.AddEndPoint(explicitEndPoint);
             //proxyServer.UpStreamHttpProxy = new ExternalProxy
@@ -122,7 +121,7 @@ namespace kingofmiao
                 if (value != selectedSession)
                 {
                     selectedSession = value;
-                    selectedSessionChanged();
+                    SelectedSessionChanged();
                 }
             }
         }
@@ -147,7 +146,7 @@ namespace kingofmiao
                 e.DecryptSsl = false;
             }
 
-            await Dispatcher.InvokeAsync(() => { addSession(e); });
+            await Dispatcher.InvokeAsync(() => { AddSession(e); });
         }
 
         private async Task ProxyServer_BeforeTunnelConnectResponse(object sender, TunnelConnectSessionEventArgs e)
@@ -166,7 +165,7 @@ namespace kingofmiao
             //if (e.HttpClient.Request.HttpVersion.Major != 2) return;
 
             SessionListItem item = null;
-            await Dispatcher.InvokeAsync(() => { item = addSession(e); });
+            await Dispatcher.InvokeAsync(() => { item = AddSession(e); });
 
             if (e.HttpClient.Request.HasBody)
             {
@@ -175,7 +174,7 @@ namespace kingofmiao
 
                 if (item == SelectedSession)
                 {
-                    await Dispatcher.InvokeAsync(selectedSessionChanged);
+                    await Dispatcher.InvokeAsync(SelectedSessionChanged);
                 }
             }
         }
@@ -205,7 +204,7 @@ namespace kingofmiao
                     await Dispatcher.InvokeAsync(() => { item.Update(e); });
                     if (item == SelectedSession)
                     {
-                        await Dispatcher.InvokeAsync(selectedSessionChanged);
+                        await Dispatcher.InvokeAsync(SelectedSessionChanged);
                     }
                 }
             }
@@ -222,15 +221,15 @@ namespace kingofmiao
             });
         }
 
-        private SessionListItem addSession(SessionEventArgsBase e)
+        private SessionListItem AddSession(SessionEventArgsBase e)
         {
-            var item = createSessionListItem(e);
+            var item = CreateSessionListItem(e);
             Sessions.Add(item);
             sessionDictionary.Add(e.HttpClient, item);
             return item;
         }
 
-        private SessionListItem createSessionListItem(SessionEventArgsBase e)
+        private SessionListItem CreateSessionListItem(SessionEventArgsBase e)
         {
             lastSessionNumber++;
             bool isTunnelConnect = e is TunnelConnectSessionEventArgs;
@@ -261,8 +260,7 @@ namespace kingofmiao
                     li.ReceivedDataCount += args.Count;
 
                     //if (tunnelType == TunnelType.Http2)
-                    AppendTransferLog(session.GetHashCode() + (isTunnelConnect ? "_tunnel" : "") + "_received",
-                        args.Buffer, args.Offset, args.Count);
+                    AppendTransferLog(args.Offset, args.Count);
                 }
             };
 
@@ -281,8 +279,7 @@ namespace kingofmiao
                     li.SentDataCount += args.Count;
 
                     //if (tunnelType == TunnelType.Http2)
-                    AppendTransferLog(session.GetHashCode() + (isTunnelConnect ? "_tunnel" : "") + "_sent",
-                        args.Buffer, args.Offset, args.Count);
+                    AppendTransferLog(args.Offset, args.Count);
                 }
             };
 
@@ -290,19 +287,17 @@ namespace kingofmiao
             {
                 te.DecryptedDataReceived += (sender, args) =>
                 {
-                    var session = (SessionEventArgsBase)sender;
                     //var tunnelType = session.HttpClient.ConnectRequest?.TunnelType ?? TunnelType.Unknown;
                     //if (tunnelType == TunnelType.Http2)
-                    AppendTransferLog(session.GetHashCode() + "_decrypted_received", args.Buffer, args.Offset,
+                    AppendTransferLog(args.Offset,
                         args.Count);
                 };
 
                 te.DecryptedDataSent += (sender, args) =>
                 {
-                    var session = (SessionEventArgsBase)sender;
                     //var tunnelType = session.HttpClient.ConnectRequest?.TunnelType ?? TunnelType.Unknown;
                     //if (tunnelType == TunnelType.Http2)
-                    AppendTransferLog(session.GetHashCode() + "_decrypted_sent", args.Buffer, args.Offset, args.Count);
+                    AppendTransferLog(args.Offset, args.Count);
                 };
             }
 
@@ -310,7 +305,7 @@ namespace kingofmiao
             return item;
         }
 
-        private void AppendTransferLog(string fileName, byte[] buffer, int offset, int count)
+        private void AppendTransferLog(int offset, int count)
         {
             //string basePath = @"c:\!titanium\";
             //using (var fs = new FileStream(basePath + fileName, FileMode.Append, FileAccess.Write, FileShare.Read))
@@ -361,11 +356,11 @@ namespace kingofmiao
             }
         }
 
-        private void selectedSessionChanged()
+        private void SelectedSessionChanged()
         {
             if (SelectedSession == null)
             {
-                TextBoxRequest.Text = null;
+                TextBoxRequest.Text = "";
                 TextBoxResponse.Text = string.Empty;
                 ImageResponse.Source = null;
                 return;

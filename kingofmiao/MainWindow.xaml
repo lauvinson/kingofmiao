@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:kingofmiao"
         mc:Ignorable="d"
-        Title="未来有更多机会" Height="500" Width="1000" WindowState="Normal" 
+        Title="一起苗苗苗" Height="500" Width="1000" WindowState="Normal" 
         DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <Grid>
         <Grid.ColumnDefinitions>
